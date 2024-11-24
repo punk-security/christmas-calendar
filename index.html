@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punk Security Open Source Advent Calendar - 2024</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .calendar-container {
+            padding: 50px;
+            padding-top:150px;
+            background-image: url('background.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            grid-gap: 25px;
+            background-color: rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .door-container {
+            position: relative;
+            perspective: 1000px;
+            width: 100px;
+            height: 100px;
+        }
+
+        .door {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-color: #fff;
+            border: 2px dashed #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.6s ease-in-out;
+            transform-origin: left;
+            z-index: 1;
+        }
+
+        .door.open {
+            transform: rotateY(-180deg);
+            z-index: 10;
+        }
+
+        .door-number {
+            font-size: 24px;
+            font-weight: bold;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .door.open .door-number {
+            opacity: 0;
+        }
+
+        .door-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            visibility: hidden;
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .door.open + .door-content {
+            visibility: visible;
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .modal-overlay.active {
+            display: block;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar" id="calendar"></div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal" id="modal">
+        <button class="modal-close" id="modal-close">&times;</button>
+        <div id="modal-content">
+            <!-- GitHub stats widget will be rendered here -->
+        </div>
+    </div>
+
+    <script>
+        const calendar = document.getElementById("calendar");
+
+        // Fetch data from the provided URL
+        async function fetchDoorData() {
+            try {
+                const response = await fetch('https://hfzw6qxvwriuip4cv322iazmh40fxjbz.lambda-url.eu-west-2.on.aws/');
+                const doorData = await response.json();
+                generateCalendar(doorData);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        function generateCalendar(doorData) {
+            doorData.forEach(({ doorNumber, name, repoOwner, repoName, description, clickable }) => {
+                const doorContainer = document.createElement("div");
+                doorContainer.className = "door-container";
+
+                const door = document.createElement("div");
+                door.className = "door";
+                door.innerHTML = `<div class="door-number">${doorNumber}</div>`;
+
+                const doorContent = document.createElement("div");
+                doorContent.className = "door-content";
+                doorContent.textContent = name;
+
+                if (clickable) {
+                    door.addEventListener("click", () => {
+                        door.classList.toggle("open");
+                    });
+
+                    doorContent.addEventListener("click", () => {
+                        loadModalContent({ name, repoOwner, repoName, description });
+                    });
+                }
+
+                doorContainer.appendChild(door);
+                doorContainer.appendChild(doorContent);
+                calendar.appendChild(doorContainer);
+            });
+        }
+
+        const modal = document.getElementById("modal");
+        const modalOverlay = document.getElementById("modal-overlay");
+        const modalClose = document.getElementById("modal-close");
+        const modalContent = document.getElementById("modal-content");
+
+        modalClose.addEventListener("click", () => {
+            modal.classList.remove("active");
+            modalOverlay.classList.remove("active");
+        });
+
+        modalOverlay.addEventListener("click", () => {
+            modal.classList.remove("active");
+            modalOverlay.classList.remove("active");
+        });
+
+        async function loadModalContent({ name, repoOwner, repoName, description }) {
+            modalContent.innerHTML = `
+                <div style="font-family: Arial, sans-serif; border: 1px solid #ddd; border-radius: 8px; padding: 20px; max-width: 400px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo" style="width: 40px; height: 40px; margin-right: 10px;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.2em; color: #0073e6;">${name}</h2>
+                            <a href="https://github.com/${repoOwner}/${repoName}" target="_blank" style="font-size: 0.9em; color: #0073e6; text-decoration: none;">View on GitHub</a>
+                        </div>
+                    </div>
+                    <p>${description}</p>
+                    <p style="margin: 10px 0;"><strong>Stars:</strong> <span id="stars">Loading...</span></p>
+                    <p style="margin: 10px 0;"><strong>Contributors:</strong> <span id="contributors">Loading...</span></p>
+                </div>
+            `;
+
+            modal.classList.add("active");
+            modalOverlay.classList.add("active");
+
+            const repoApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}`;
+            try {
+                const repoResponse = await fetch(repoApiUrl);
+                const repoData = await repoResponse.json();
+
+                const contributorsResponse = await fetch(`${repoApiUrl}/contributors`);
+                const contributorsData = await contributorsResponse.json();
+
+                document.getElementById("stars").textContent =
+                    repoData.stargazers_count || "N/A";
+                document.getElementById("contributors").textContent =
+                    contributorsData.length || "N/A";
+            } catch (err) {
+                console.error("Error fetching data:", err);
+            }
+        }
+
+        // Fetch door data and initialize calendar
+        fetchDoorData();
+    </script>
+</body>
+</html>
